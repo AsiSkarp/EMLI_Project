@@ -13,3 +13,8 @@ The Python scripts used for the project can be found in the folder "python"
 ### Configuration Files
 The configuration files used for the project can be found in the folder "configuration"
 
+### Arduino files
+The Arduino files used for the project can be found in the folder "ino"
+
+### Pictures
+This folder will contain pictures which may or may not be used for the project
