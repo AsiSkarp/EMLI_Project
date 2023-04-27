@@ -18,12 +18,12 @@ volatile unsigned long count_prev_time;
 
 // Wifi
 #include <ESP8266WiFi.h>
-const char* WIFI_SSID = "EMLI";
-const char* WIFI_PASSWORD = "EMLIpassword";
+const char* WIFI_SSID = "EMLI_TEAM_19";
+const char* WIFI_PASSWORD = "12341234";
 
 // Static IP address
-IPAddress IPaddress(192, 168, 0, 222);
-IPAddress gateway(192, 168, 0, 1);
+IPAddress IPaddress(192, 168, 10, 222);
+IPAddress gateway(192, 168, 10, 1);
 IPAddress subnet(255, 255, 255, 0);
 //IPAddress primaryDNS(1, 1, 1, 1); 
 //IPAddress secondaryDNS(8, 8, 8, 8); 
