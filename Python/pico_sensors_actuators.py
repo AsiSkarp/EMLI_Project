@@ -69,8 +69,8 @@ def watering_interval():
     global init_time
     diff = interval - init_time
     hour_diff = interval - hour_timer
-    hour = 3600  # 3600
-    day = 43200  # 43200
+    hour = 3600  # 3600 seconds
+    day = 43200  # 43200 seconds
 
     if hour_diff > hour:
         isWatered = False
