@@ -52,7 +52,7 @@ ICACHE_RAM_ATTR void button_a_isr()
   if (millis() - count_prev_time > DEBOUNCE_TIME)
   {
     count_prev_time = millis();
-    button_a_count++;
+    mqttClient.publish("emli19/button", "1");
   }
 }
 
@@ -208,6 +208,8 @@ void loop()
     reconnect();
   }
   mqttClient.loop();
+
+  
   /*
   client = server.available();
   if (client) {
