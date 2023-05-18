@@ -9,6 +9,8 @@
 #define PIN_LED_RED     14
 #define PIN_LED_YELLOW  13
 #define PIN_LED_GREEN   12
+bool pumpAlarmOn = false;
+bool plantAlarmOn = false;;
 
 // button
 #define PIN_BUTTON      4
@@ -31,12 +33,19 @@ IPAddress subnet(255, 255, 255, 0);
 // Webserver
 #define CLIENT_TIMEOUT 2000
 
-WiFiServer server(80);
-WiFiClient client = server.available();
+#include <PubSubClient.h>
+const char* mqtt_server = "192.168.10.1";
+
+//WiFiServer server(80);
+//WiFiClient client = server.available();
+WiFiClient client;
+
 unsigned long clientConnectTime = 0;
 String currentLine = "";
 char response_s[10];
 char s[25];
+
+PubSubClient mqttClient(client);
 
 ICACHE_RAM_ATTR void button_a_isr()
 {
@@ -44,6 +53,94 @@ ICACHE_RAM_ATTR void button_a_isr()
   {
     count_prev_time = millis();
     button_a_count++;
+  }
+}
+
+void callback(char* topic, byte* message, unsigned int length) {
+  Serial.print("Message arrived on topic: ");
+  Serial.print(topic);
+  Serial.print(". Message: ");
+  String messageTemp;
+  
+  for (int i = 0; i < length; i++) {
+    Serial.print((char)message[i]);
+    messageTemp += (char)message[i];
+  }
+  Serial.println();
+
+  // Feel free to add more if statements to control more GPIOs with MQTT
+
+  // If a message is received on the topic esp32/output, you check if the message is either "on" or "off". 
+  // Changes the output state according to the message
+  if (String(topic) == "emli19/plant_water_alarm") {
+    Serial.print("Changing output to ");
+    if(messageTemp == "0"){
+      Serial.println("off");
+      plantAlarmOn = false;
+    }
+    else if(messageTemp == "1"){
+      Serial.println("on");
+      digitalWrite(PIN_LED_RED, HIGH);
+      digitalWrite(PIN_LED_GREEN, LOW);
+      digitalWrite(PIN_LED_YELLOW, LOW);
+      plantAlarmOn = true;
+    }
+  }
+    if (String(topic) == "emli19/pump_water_alarm") {
+    Serial.print("Changing output to ");
+    if(messageTemp == "0"){
+      Serial.println("off");
+      pumpAlarmOn = false;
+    }
+    else if(messageTemp == "1"){
+      Serial.println("on");
+      // For testing purposes, we use 1 as an alarm. However, in a running system a 0 will trigger an alarm.
+      digitalWrite(PIN_LED_RED, HIGH);
+      digitalWrite(PIN_LED_GREEN, LOW);
+      digitalWrite(PIN_LED_YELLOW, LOW);
+      pumpAlarmOn = true;
+    }
+  }
+    if (String(topic) == "emli19/moisture") {
+    Serial.print("Changing output to ");
+    if(messageTemp.toInt() > 50){
+      if (!pumpAlarmOn && !plantAlarmOn) {
+        Serial.println("on");
+        digitalWrite(PIN_LED_GREEN, HIGH);
+        digitalWrite(PIN_LED_RED, LOW);
+        digitalWrite(PIN_LED_YELLOW, LOW);
+      }
+    }
+    else if(messageTemp.toInt() <= 50){
+      if (!pumpAlarmOn && !plantAlarmOn) {
+        Serial.println("off");
+        digitalWrite(PIN_LED_RED, LOW);
+        digitalWrite(PIN_LED_GREEN, LOW);
+        digitalWrite(PIN_LED_YELLOW, HIGH);
+      }
+    }
+  }
+}
+
+
+void reconnect() {
+  // Loop until we're reconnected
+  while (!mqttClient.connected()) {
+    Serial.print("Attempting MQTT connection...");
+    // Attempt to connect
+    if (mqttClient.connect("ESP8266Client", "emli19","123")) {
+      Serial.println("connected");
+      // Subscribe
+      mqttClient.subscribe("emli19/plant_water_alarm");
+      mqttClient.subscribe("emli19/pump_water_alarm");
+      mqttClient.subscribe("emli19/moisture");
+    } else {
+      Serial.print("failed, rc=");
+      Serial.print(mqttClient.state());
+      Serial.println(" try again in 5 seconds");
+      // Wait 5 seconds before retrying
+      delay(5000);
+    }
   }
 }
 
@@ -94,14 +191,24 @@ void setup()
   Serial.println("");
 
   // start webserver
+  /*
   Serial.println("Starting webserver");
   Serial.println("");
   server.begin();
+  */
+
+  // Start MQTT Client
+  mqttClient.setServer(mqtt_server, 1883);
+  mqttClient.setCallback(callback);
 }
 
 void loop()
 {
-  // test for newæ client
+  if (!mqttClient.connected()) {
+    reconnect();
+  }
+  mqttClient.loop();
+  /*
   client = server.available();
   if (client) {
     Serial.println("New client");
@@ -127,7 +234,7 @@ void loop()
             client.println();
             response_s[0] = 0;
           } else {
-
+            
             if (currentLine.startsWith("GET /led/red/on")) {
               Serial.println("Red LED on");
               digitalWrite(PIN_LED_RED, HIGH);
@@ -165,5 +272,5 @@ void loop()
     client.stop();
     Serial.println("Client disconnected.");
     Serial.println("");
+    */ 
   }
-}
